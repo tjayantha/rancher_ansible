@@ -1,0 +1,53 @@
+---
+# defaults file for common
+
+docker__edition: "ce"
+docker__channel: "stable"
+#docker__version: "18.03.0"
+#docker__minor: "-0"
+docker__version: "18.06.1"
+docker__minor: "~3-0"
+
+docker__daemon_options_log_max_size: "10m"
+docker__daemon_options_log_max_file: 1000
+
+# Control the disk space used for Docker images, containers, and volumes by moving it to a separate partition "data-root".
+docker__root: "/infrastructure"
+
+docker__daemon_default_options: |
+  "data-root": "{{ docker__root }}",
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "{{ docker__daemon_options_log_max_size }}",
+    "max-file": "{{ docker__daemon_options_log_max_file }}"
+  }
+
+docker__daemon_options: ""
+
+docker__daemon_environment: 
+  - "HTTP_PROXY=http://proxy.tjayantha.com:111" 
+  - "HTTPS_PROXY=http://proxy.tjayantha.com:111"
+  - "NO_PROXY=localhost,127.0.0.1,*tjayantha.com"
+
+docker__users: []
+docker__registries: []
+
+
+docker__cron_tasks:
+  - job: docker system prune -af &> /dev/null
+    name: "Docker clean up"
+    schedule: ["0", "0", "*", "*", "0"]
+
+docker__package_dependencies:
+  - "apt-transport-https"
+  - "ca-certificates"
+  - "software-properties-common"
+  - "gnupg2"
+  - "cron"
+
+docker__apt_key_id: "9DC858229FC7DD38854AE2D88D81803C0EBFCD88"
+docker__apt_key_server: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
+docker__apt_repository: >
+  deb [arch=amd64]
+  https://download.docker.com/linux/{{ ansible_distribution | lower }}
+  {{ ansible_distribution_release }} {{ docker__channel }}

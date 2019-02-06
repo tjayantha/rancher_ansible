@@ -1,0 +1,47 @@
+---
+- block:
+    - name: For "{{ cluster_name }}" Cluster and fetch cluserId
+      uri:
+        url: "{{ rancher_server_url }}/{{ rest_version }}/clusters?name={{ cluster_name }}"
+        method: GET
+        force_basic_auth: yes
+        user: "{{ userId }}"
+        password: "{{ tokenId }}"
+        body_format: json
+        validate_certs: no
+        #return_content: yes
+        #follow_redirects: yes
+        status_code: 200
+      register: clustercheck
+
+    - name: Get Nodecommand for the project {{ clustercheck.json['data'][0]['id'] }}
+      uri:
+        url: "{{ rancher_server_url }}/{{ rest_version }}/clusterregistrationtokens?clusterId={{ clustercheck.json['data'][0]['id'] }}"
+        method: GET
+        force_basic_auth: yes
+        user: "{{ userId }}"
+        password: "{{ tokenId }}"
+        body_format: json
+        validate_certs: no
+        #return_content: yes
+        #follow_redirects: yes
+        status_code: 200
+      register: nodecmd
+     # when: clustercheck.json['data'][0]['state'] == "active" 
+
+    - name: Node Command to join Cluster
+      debug:
+        msg: " {{nodecmd.json['data'][0]['nodeCommand']}}"
+
+    - name: Check if rancher agent container is running
+      shell: docker ps | grep rancher-agent
+      register: agent_running
+      ignore_errors: true
+      changed_when: false
+
+    - name:  Adding etcd-controlplane node to the Cluster {{ cluster_name }}
+      become: true
+      shell: "{{ nodecmd.json['data'][0]['nodeCommand'] }} --etcd --controlplane "
+      when: not agent_running is success 
+  when: type == "etcdcplane"
+

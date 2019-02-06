@@ -1,0 +1,20 @@
+# Rancher master
+[rancher-master]
+localhost ansible_connection=local  type=rmaster 
+
+[server1:children]
+rancher-master
+rcluster-cje-ba
+
+# Rancher clusters with etcd,controlplane node role
+[rcluster-cje-ba]
+cluster01.ba.tjayantha.com ansible_connection=ssh ansible_user=root ansible_password=****** type=etcdcplane
+cluster02.ba.tjayantha.com ansible_connection=ssh ansible_user=root ansible_password=****** type=etcdcplane
+cluster03.ba.tjayantha.com ansible_connection=ssh ansible_user=root ansible_password=****** type=etcdcplane
+
+
+
+# Worker Nodes to be attached to the Clusters
+[worker-ba]
+worker01.ba.tjayantha.com ansible_connection=ssh ansible_user=root ansible_password=****** type=worker
+worker02.ba.tjayantha.com ansible_connection=ssh ansible_user=root ansible_password=****** type=worker

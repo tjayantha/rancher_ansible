@@ -1,0 +1,15 @@
+---
+# Defaults variable to create new clusters 
+- name: Set Variables
+  set_fact:
+    cluster_name: "sandbox"			# Name of the cluster that needs to be created
+    cluster_project: "Default"			# Project in the cluster to be used 
+    userId: "token-54gf4"			# Token  
+    tokenId: "fjphsbzlfm4v7svnsmh4g82svvhqh676p6qq8np6gw5fwz7wx5kvlr"  # token and replace with ansible Valut
+
+
+#------ Base Modules
+- include: rancher_cluster.yml 
+- include: join_etcd_cplane.yml
+- include: join_worker_node.yml
+- include: add_catalogs.yml

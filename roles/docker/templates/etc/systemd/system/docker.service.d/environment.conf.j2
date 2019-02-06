@@ -1,0 +1,8 @@
+# {{ ansible_managed }}
+
+[Service]
+Environment="{{ docker__daemon_environment | join('" "') }}"
+
+
+ExecStart=
+ExecStart=/usr/bin/dockerd

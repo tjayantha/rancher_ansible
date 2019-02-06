@@ -1,0 +1,144 @@
+---
+
+- name: Check if rancher container is running
+  shell: docker ps | grep "rancher/rancher:"
+  register: server_running
+  ignore_errors: true
+  changed_when: false
+  when:  type == "rmaster"
+
+- name: Container is already running.
+  debug:
+    msg: "Rancher Master is already Running"
+  when: server_running is success and  type == "rmaster"
+
+- block:
+    - name: Start rancher server
+      command: "docker run -d --restart=unless-stopped -p {{ rancher_port }}:80 -p {{ rancher_ssl_port }}:443 -e {{ http_proxy }} -e {{ https_proxy }} -e {{ no_proxy }} --name {{ rancher_name }}_{{ ansible_hostname }} {{ rancher_version }}"
+      #when: not server_running is success
+      register: rancher_server
+
+    - name: Check Rancher Server "{{ rancher_server_url }}" accessible from UI
+      uri:
+        url: "{{ rancher_server_url }}"
+        validate_certs: no
+      register: http_status
+      until: http_status.status == 200
+      retries: 5
+      delay: 10
+      when: rancher_server.rc == 0
+
+    - name: Authenticate & retrieve APIKEY
+      uri:
+        url: "{{ rancher_server_url }}/{{ rest_version }}-public/localProviders/local?action=login"
+        method: POST
+        headers:
+          Content-Type: "application/json"
+        body: '{"username":"admin","password":"admin"}'  # Default Admin password
+        body_format: json
+        validate_certs: no
+        #return_content: yes
+        #follow_redirects: yes
+        status_code: 201
+      register: restdata
+      when: http_status.status == 200
+
+    - name: Retrieve secert Key
+      shell: echo "{{restdata.json['token']}}" |cut -d ":" -f2
+      register: pass
+      when: restdata.status == 201
+
+    - name: Authenticate & Reset the Default Admin password
+      uri:
+        url: "{{ rancher_server_url }}/{{ rest_version }}/users?action=changepassword"
+        method: POST
+        force_basic_auth: yes
+        user: "{{restdata.json['name']}}"
+        password: "{{pass.stdout}}"
+        headers:
+          Content-Type: "application/json"
+        body: '{"currentPassword":"admin","newPassword":"{{ newPassword }}"}'
+        body_format: json
+        validate_certs: no
+        #return_content: yes
+        #follow_redirects: yes
+        status_code: 200
+      register: resetpass
+      when: restdata.status == 201
+
+    - name:  Set Rancher Server URL "{{ rancher_server_url }}"
+      uri:
+        url: "{{ rancher_server_url }}/{{ rest_version }}/settings/server-url"
+        method: PUT
+        force_basic_auth: yes
+        user: "{{restdata.json['name']}}"
+        password: "{{pass.stdout}}"
+        headers:
+          Content-Type: "application/json"
+        body: '{"name":"server-url","value":"{{ rancher_server_url }}"}'
+        body_format: json
+        validate_certs: no
+        #return_content: yes
+        #follow_redirects: yes
+        status_code: 200
+      register: reseturl
+      when: resetpass.status == 200
+
+    - name: Enable Helm in catalog
+      uri:
+        url: "{{ rancher_server_url }}/{{ rest_version }}/catalogs"
+        method: POST
+        force_basic_auth: yes
+        user: "{{restdata.json['name']}}"
+        password: "{{pass.stdout}}"
+        headers:
+          Content-Type: "application/json"
+        body: '{"name":"helm","url":"{{ helm_server_url }}","branch":"{{ helm_branch }}","kind":"helm"}'
+        body_format: json
+        validate_certs: no
+        #return_content: yes
+        #follow_redirects: yes
+        status_code: 201
+      register: restcatalog
+
+    - name: Test and Apply Active Directory Configuration
+      uri:
+        url: "{{ rancher_server_url }}/{{ rest_version }}/activeDirectoryConfigs/activedirectory?action=testAndApply"
+        method: POST
+        force_basic_auth: yes
+        user: "{{restdata.json['name']}}"
+        password: "{{pass.stdout}}"
+        headers:
+          Content-Type: "application/json"
+        body: '{"activeDirectoryConfig":{"port":{{ ldap_port }}, "servers":["{{ ldap_server }}"], "serviceAccountUsername":{{ adUser }}, "userSearchBase":"{{ user_search_base }}", "userSearchFilter":"{{ user_search_filter }}", "accessMode":"unrestricted", "serviceAccountPassword":{{ adPass }}, "groupSearchBase":"{{ group_search_base }}","groupSearchFilter":"{{ group_search_filter }}"}, "enabled":true, "password":{{ adPass }}, "username":{{ adUser }}}'
+        body_format: json
+        validate_certs: no
+        #return_content: yes
+        #follow_redirects: yes
+        status_code: 200
+      register: adcheck
+
+    - name: Creates cacerts directory
+      file: 
+        path: "~/.rancher/"
+        state: directory
+
+    - name: Get CaCerts
+      uri:
+        url: "{{ rancher_server_url }}/{{ rest_version }}/settings/cacerts"
+        method: GET
+        force_basic_auth: yes
+        user: "{{ userId }}"
+        password: "{{ tokenId }}"
+        body_format: json
+        validate_certs: no
+        #return_content: yes
+        #follow_redirects: yes
+        status_code: 200
+      register: getcacerts
+
+    - name: Create cacerts file
+      template:
+        src: "cacerts.j2"
+        dest: "~/.rancher/cacerts"
+  when: not server_running is success and  type == "rmaster"

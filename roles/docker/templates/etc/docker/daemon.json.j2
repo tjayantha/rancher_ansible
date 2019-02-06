@@ -1,0 +1,11 @@
+{
+{%- if docker__daemon_default_options | default() -%}
+{{ docker__daemon_default_options | indent(2, true) }}
+{%- endif -%}
+{%- if (docker__daemon_default_options | default()) and (docker__daemon_options | default()) -%}
+,
+{%- endif -%}
+{%- if docker__daemon_options | default() -%}
+{{ docker__daemon_options | indent(2, true) }}
+{%- endif -%}
+}

@@ -1,0 +1,8 @@
+---
+# handlers file for common
+
+- name: Restart Docker
+  systemd:
+    name: "docker"
+    state: "restarted"
+    enabled: true

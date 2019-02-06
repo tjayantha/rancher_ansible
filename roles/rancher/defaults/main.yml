@@ -1,0 +1,39 @@
+---
+# defaults file for rancher
+rancher_name: 'rancher_master'
+rancher_port: 80
+rancher_ssl_port: 443
+rancher_version: "rancher/rancher:stable"
+rancher_server_url: "https://rancher.tjayantha.com"
+helm_server_url: "https://kubernetes-charts.storage.googleapis.com/"
+helm_branch: "master"
+
+rest_version: "v3"
+
+dockerRootDir: "/var/lib/docker"
+
+newPassword: "abc"  				# New admin password, Replace with ansible Valut.
+	
+# ActiveDirectory Configuration 
+adUser: '"sys_rancher"'				# Rancher Service Account.
+adPass: '"tjayantha2018!"'   			# Replace with ansible Valut.
+ldap_port: "3268"
+ldap_server: "ldap.server.tjayantha.com"
+user_search_base: "DC=corp, DC=tjayantha, DC=com"
+user_search_filter: "DC=corp, DC=tjayantha, DC=com"
+group_search_base: "DC=corp, DC=tjayantha, DC=com"
+group_search_filter: "DC=corp, DC=tjayantha, DC=com"
+
+
+# cluster_name: "jt-k8s"
+cluster_name: "sandbox"
+cluster_project: "Default"
+
+# token and replace with ansible Valut
+userId: "token-54gf4"                      
+tokenId: "fjphsbzlfm4v7svnsmh4g82svvhqh676p6qq8np6gw5fwz7wx5kvlr"
+
+# proxy
+http_proxy: HTTP_PROXY="http://proxy-us.tjayantha.com:111"
+https_proxy: HTTPS_PROXY="http://proxy-us.tjayantha.com:111"
+no_proxy: NO_PROXY="tjayantha.com,.tjayantha.com,10.0.0.0/8,192.168.0.0/16,localhost,127.0.0.0/8,0.0.0.0"

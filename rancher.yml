@@ -1,0 +1,7 @@
+---
+#- hosts: rancher-master
+- hosts: server1
+  roles:
+     - docker
+     - rancher
+...

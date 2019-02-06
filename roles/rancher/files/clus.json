@@ -1,0 +1,1 @@
+{"dockerRootDir":"/var/lib/docker","enableNetworkPolicy":false,"type":"cluster","rancherKubernetesEngineConfig":{"addonJobTimeout":30,"ignoreDockerVersion":true,"sshAgentAuth":false,"type":"rancherKubernetesEngineConfig","network":{"type":"networkConfig","plugin":"Flannel"}},"name":"yournewclustersssansi"}'

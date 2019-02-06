@@ -1,0 +1,53 @@
+---
+- block:
+    - name: Check Cluster and fetch cluserId
+      uri:
+        url: "{{ rancher_server_url }}/{{ rest_version }}/clusters?name={{ cluster_name }}"
+        method: GET
+        force_basic_auth: yes
+        user: "{{ userId }}"
+        password: "{{ tokenId }}"
+        body_format: json
+        validate_certs: no
+        #return_content: yes
+        #follow_redirects: yes
+        status_code: 200
+      register: clustercheck
+
+    - name: Create Cluster {{ cluster_name }}
+      uri:
+        url: "{{ rancher_server_url }}/{{ rest_version }}/clusters"
+        method: POST
+        force_basic_auth: yes
+        user: "{{ userId }}"
+        password: "{{ tokenId }}"
+        headers:
+          Content-Type: "application/json"
+        #body: '{"dockerRootDir":"/var/lib/docker","type":"cluster","rancherKubernetesEngineConfig":{"type":"rancherKubernetesEngineConfig"},"name":"{{ cluster_name }}"}'
+        body: '{"dockerRootDir":"{{ dockerRootDir }}","enableNetworkPolicy":false,"type":"cluster","rancherKubernetesEngineConfig":{"addonJobTimeout":30,"ignoreDockerVersion":true,"sshAgentAuth":false,"type":"rancherKubernetesEngineConfig","authentication":{"type":"authnConfig","strategy":"x509"},"network":{"type":"networkConfig","plugin":"flannel"},"ingress":{"type":"ingressConfig","provider":"nginx"},"monitoring":{"type":"monitoringConfig","provider":"metrics-server"},"services":{"type":"rkeConfigServices","kubeApi":{"podSecurityPolicy":false,"type":"kubeAPIService"},"etcd":{"snapshot":true,"type":"etcdService","extraArgs":{"heartbeat-interval":500,"election-timeout":5000}}}},"name":"{{ cluster_name }}"}'
+        body_format: json
+        validate_certs: no
+        #return_content: yes
+        #follow_redirects: yes
+        status_code: 201
+      register: clusterdata
+      when: clustercheck.json['pagination']['total'] == 0
+
+    - name: Genrate clusterRegistrationToken
+      uri:
+        url: "{{ rancher_server_url }}/{{ rest_version }}/clusterregistrationtoken"
+        method: POST
+        force_basic_auth: yes
+        user: "{{ userId }}"
+        password: "{{ tokenId }}"
+        headers:
+          Content-Type: "application/json"
+        body: "{\"clusterId\":\"{{ clusterdata.json['id'] }}\" }"
+        body_format: json
+        validate_certs: no
+        #return_content: yes
+        #follow_redirects: yes
+        status_code: 201
+      when: clustercheck.json['pagination']['total'] == 0
+  when: type == "rmaster"
+
